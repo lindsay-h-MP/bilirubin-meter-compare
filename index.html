@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Amazon Device (MBJ20) — Clinical Evidence Deep Dive</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;0,700;1,400&family=DM+Sans:wght@300;400;500;600;700&display=swap');
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --green: #14532d;
+  --green-mid: #16a34a;
+  --green-light: #dcfce7;
+  --green-border: #86efac;
+  --yellow: #713f12;
+  --yellow-mid: #ca8a04;
+  --yellow-light: #fef9c3;
+  --yellow-border: #fde047;
+  --red: #7f1d1d;
+  --red-mid: #dc2626;
+  --red-light: #fee2e2;
+  --red-border: #fca5a5;
+  --blue: #1e3a8a;
+  --blue-light: #eff6ff;
+  --bg: #f9fafb;
+  --surface: #ffffff;
+  --border: #e5e7eb;
+  --text: #111827;
+  --muted: #6b7280;
+}
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+/* NAV */
+.sticky-nav {
+  position: sticky;
+  top: 0;
+  background: white;
+  border-bottom: 1px solid var(--border);
+  z-index: 100;
+  padding: 0 36px;
+  display: flex;
+  gap: 4px;
+  overflow-x: auto;
+}
+.nav-btn {
+  padding: 14px 16px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  cursor: pointer;
+  border: none;
+  background: transparent;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: all 0.2s;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+.nav-btn:hover { color: var(--text); }
+.nav-btn.active { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* HERO */
+.hero {
+  background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 60%, #2563eb 100%);
+  color: white;
+  padding: 40px 36px 32px;
+}
+.hero-tag {
+  display: inline-block;
+  background: rgba(255,255,255,0.12);
+  border: 1px solid rgba(255,255,255,0.25);
+  border-radius: 20px;
+  padding: 4px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  margin-bottom: 12px;
+}
+.hero h1 {
+  font-family: 'Lora', serif;
+  font-size: 26px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  line-height: 1.3;
+}
+.hero p { font-size: 13px; opacity: 0.75; max-width: 620px; }
+
+/* SECTIONS */
+.section { display: none; padding: 32px 36px; max-width: 960px; }
+.section.active { display: block; }
+
+.section-header {
+  font-family: 'Lora', serif;
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+.section-sub {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+/* VERDICT BANNER */
+.verdict-banner {
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin-bottom: 24px;
+  border-left: 5px solid;
+}
+.vb-yes { background: var(--green-light); border-color: var(--green-mid); }
+.vb-caution { background: var(--yellow-light); border-color: var(--yellow-mid); }
+.vb-no { background: var(--red-light); border-color: var(--red-mid); }
+.verdict-banner h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+.vb-yes h3 { color: var(--green); }
+.vb-caution h3 { color: var(--yellow); }
+.vb-no h3 { color: var(--red); }
+.verdict-banner p { font-size: 13px; line-height: 1.6; }
+
+/* STUDY CARDS */
+.study-grid { display: flex; flex-direction: column; gap: 16px; }
+.study-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.study-head {
+  background: var(--blue-light);
+  padding: 14px 20px;
+  border-bottom: 1px solid #bfdbfe;
+}
+.study-head h4 { font-size: 14px; font-weight: 700; color: var(--blue); margin-bottom: 2px; }
+.study-head .meta { font-size: 11px; color: #3b82f6; }
+.study-body { padding: 16px 20px; }
+.study-body p { font-size: 13px; margin-bottom: 10px; }
+.study-body p:last-child { margin-bottom: 0; }
+
+/* METRICS ROW */
+.metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 0; }
+.metric {
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  text-align: center;
+}
+.metric .val { font-size: 22px; font-weight: 800; color: var(--blue); line-height: 1.1; }
+.metric .lbl { font-size: 11px; color: var(--muted); margin-top: 4px; }
+
+/* FINDING ROWS */
+.finding-row {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  padding: 10px 0;
+  border-bottom: 1px solid #f3f4f6;
+  font-size: 13px;
+}
+.finding-row:last-child { border-bottom: none; }
+.finding-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+.finding-text strong { display: block; font-weight: 600; color: var(--text); }
+.finding-text span { color: var(--muted); font-size: 12.5px; }
+
+/* INFO BOX */
+.info-box {
+  background: var(--blue-light);
+  border: 1px solid #bfdbfe;
+  border-radius: 10px;
+  padding: 16px 18px;
+  font-size: 13px;
+  color: var(--blue);
+  margin: 16px 0;
+  line-height: 1.6;
+}
+.info-box strong { display: block; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+
+/* TWO COL */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
+.col-card {
+  border-radius: 10px;
+  padding: 16px 18px;
+  border: 1px solid;
+  font-size: 13px;
+}
+.cc-green { background: var(--green-light); border-color: var(--green-border); }
+.cc-red { background: var(--red-light); border-color: var(--red-border); }
+.cc-yellow { background: var(--yellow-light); border-color: var(--yellow-border); }
+.col-card h4 { font-weight: 700; font-size: 13px; margin-bottom: 10px; }
+.cc-green h4 { color: var(--green); }
+.cc-red h4 { color: var(--red); }
+.cc-yellow h4 { color: var(--yellow); }
+.col-card li { margin-bottom: 6px; margin-left: 16px; line-height: 1.45; }
+
+/* TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 12.5px; margin: 16px 0; }
+.data-table th { background: #1e3a8a; color: white; padding: 10px 14px; text-align: left; font-weight: 600; }
+.data-table td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.data-table tr:nth-child(even) td { background: #f9fafb; }
+.data-table tr:last-child td { border-bottom: none; }
+.badge-good { background: var(--green-light); color: var(--green); border-radius: 4px; padding: 2px 8px; font-weight: 700; font-size: 11px; }
+.badge-warn { background: var(--yellow-light); color: var(--yellow); border-radius: 4px; padding: 2px 8px; font-weight: 700; font-size: 11px; }
+.badge-bad { background: var(--red-light); color: var(--red); border-radius: 4px; padding: 2px 8px; font-weight: 700; font-size: 11px; }
+
+/* FINAL VERDICT */
+.verdict-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin: 16px 0; }
+.vg-card {
+  border-radius: 10px;
+  padding: 16px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  text-align: center;
+}
+.vg-card .score { font-size: 32px; font-weight: 900; margin-bottom: 4px; }
+.vg-card .label { font-size: 12px; font-weight: 600; color: var(--muted); margin-bottom: 8px; }
+.vg-card p { font-size: 12px; color: var(--muted); line-height: 1.4; }
+.score-a { color: var(--green-mid); }
+.score-b { color: var(--yellow-mid); }
+.score-c { color: var(--red-mid); }
+
+.recommendation-box {
+  background: #0f172a;
+  color: white;
+  border-radius: 14px;
+  padding: 24px 28px;
+  margin-top: 20px;
+}
+.recommendation-box h3 {
+  font-family: 'Lora', serif;
+  font-size: 17px;
+  font-weight: 600;
+  margin-bottom: 14px;
+  color: #93c5fd;
+}
+.rec-item { display: flex; gap: 10px; margin-bottom: 10px; font-size: 13px; line-height: 1.5; }
+.rec-num { background: #1e3a8a; color: #93c5fd; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; flex-shrink: 0; margin-top: 1px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-tag">Evidence Review</div>
+  <h1>Amazon Device (MBJ20 Platform) — Clinical Accuracy &amp; Efficiency Deep Dive</h1>
+  <p>Everything published about the underlying M&amp;B MBJ20 technology, what it means for a mobile pediatric practice in DFW/Austin, and whether this purchase is worth it.</p>
+</div>
+
+<nav class="sticky-nav">
+  <button class="nav-btn active" onclick="show('origin', this)">Device Origin</button>
+  <button class="nav-btn" onclick="show('studies', this)">Clinical Studies</button>
+  <button class="nav-btn" onclick="show('accuracy', this)">Accuracy Data</button>
+  <button class="nav-btn" onclick="show('skin', this)">Skin Tone Accuracy</button>
+  <button class="nav-btn" onclick="show('phototherapy', this)">Post-Phototherapy</button>
+  <button class="nav-btn" onclick="show('mobile', this)">Mobile Practice Fit</button>
+  <button class="nav-btn" onclick="show('verdict', this)">Final Verdict</button>
+</nav>
+
+<!-- ORIGIN -->
+<div class="section active" id="origin">
+  <div class="section-header">What Is the Amazon Device, Really?</div>
+  <p class="section-sub">The listing (B0G1YBC8BN) is sold by Hutchison Medical — but the underlying device is manufactured by Beijing M&amp;B Electronic Instruments Co., Ltd. (China). This is important because clinical research does exist — just not under the Hutchison brand name.</p>
+
+  <div class="verdict-banner vb-yes">
+    <h3>✓ Good News: This Device Has Published Clinical Research</h3>
+    <p>Unlike most cheap Amazon medical gadgets, the M&amp;B MBJ20 platform has been studied in peer-reviewed journals. The product B0G1YBC8BN is Hutchison Medical's U.S. retail distribution of the M&amp;B MBJ20 (or a close variant). Multiple published studies evaluated this exact device. This changes the picture somewhat from the original comparison — there IS data to work with.</p>
+  </div>
+
+  <div class="finding-row">
+    <div class="finding-icon">🏭</div>
+    <div class="finding-text">
+      <strong>OEM Manufacturer: Beijing M&amp;B Electronic Instruments Co., Ltd.</strong>
+      <span>A Chinese medical device company that produces the MBJ20, MBJ30, and related bilirubinometer lines. The same hardware is sold under multiple brand names globally. Hutchison Medical (Illinois) is the U.S. distributor — they do not manufacture the device themselves.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">📦</div>
+    <div class="finding-text">
+      <strong>Hutchison Medical — The U.S. Brand</strong>
+      <span>Family-owned small business in Illinois. Has been selling M&amp;B-manufactured jaundice meters on Amazon and eBay since 2017. Hutchison Medical states "hundreds of pediatricians" have purchased from them with repeat orders. They offer a 1-year warranty and 30-day returns. They are essentially a reseller, not a manufacturer.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">🌐</div>
+    <div class="finding-text">
+      <strong>Global Deployment of the MBJ20</strong>
+      <span>The MBJ20 is referenced in clinical studies from Nigeria, Turkey, Iran, India, Thailand, and South India — as well as active clinical trials registered in the U.S. on ClinicalTrials.gov. It is not an obscure device globally; it is widely used in resource-limited settings as an affordable TcB alternative to the JM-105.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">⚠️</div>
+    <div class="finding-text">
+      <strong>No FDA 510(k) Clearance — This Remains True</strong>
+      <span>Despite having real clinical data, the MBJ20 / Hutchison Medical product has not sought or received FDA 510(k) clearance for the U.S. market. It is marketed and sold here, but is not an FDA-approved diagnostic instrument. This is the single biggest regulatory gap, regardless of clinical performance data.</span>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>How to interpret the research below</strong>
+    The studies cited were conducted in international settings (Nigeria, Turkey, Iran, India, Thailand). Patient populations, skin tone distributions, gestational age ranges, and lab methods differ from a U.S. DFW/Austin practice. You should weight the data from more comparable populations more heavily, and know that no U.S.-based clinical trial of the MBJ20 has been published.
+  </div>
+</div>
+
+<!-- STUDIES -->
+<div class="section" id="studies">
+  <div class="section-header">Published Clinical Studies on the MBJ20</div>
+  <p class="section-sub">Four peer-reviewed studies and one active clinical trial are directly relevant. Here's what each found.</p>
+
+  <div class="study-grid">
+
+    <div class="study-card">
+      <div class="study-head">
+        <h4>Study 1 — Nigerian Hospital Population (Okpara, 2016)</h4>
+        <div class="meta">International Journal of Neonatal Screening · DOI: 10.3390/ijns2040008 · 222 measurements, 88 newborns, 28–44 weeks gestation</div>
+      </div>
+      <div class="study-body">
+        <p><strong>What they did:</strong> Compared MBJ20 TcB readings at the forehead and sternum against same-time lab TSB measurements at a Nigerian teaching hospital. Neonates ranged from 28 to 44 weeks — a wider range than most studies, including preterm infants.</p>
+        <div class="metrics">
+          <div class="metric"><div class="val">r = 0.917</div><div class="lbl">Sternum correlation with TSB</div></div>
+          <div class="metric"><div class="val">r = 0.904</div><div class="lbl">Forehead correlation with TSB</div></div>
+          <div class="metric"><div class="val">+2.0 mg/dL</div><div class="lbl">Mean overestimation at sternum</div></div>
+        </div>
+        <p><strong>Key finding:</strong> Strong correlation overall, but the MBJ20 systematically overestimated TSB by an average of 2.0 mg/dL at the sternum and 3.2 mg/dL at the forehead. The study population was predominantly dark-skinned, which inflates overestimation figures.</p>
+        <p><strong>Bottom line:</strong> Reliable correlation, but a meaningful positive bias — it reads higher than the actual blood bilirubin. In clinical terms, this means it may over-refer for phototherapy, not under-refer. Safer than the reverse, but will inflate your lab-confirm rate.</p>
+      </div>
+    </div>
+
+    <div class="study-card">
+      <div class="study-head">
+        <h4>Study 2 — Iranian Hospital, Multi-Site Comparison (PMC, 2024)</h4>
+        <div class="meta">PubMed Central · 202 newborns, GA &gt;30 weeks, sternum vs. forehead vs. wrist vs. auricle vs. interscapular</div>
+      </div>
+      <div class="study-body">
+        <p><strong>What they did:</strong> Measured TcB at five different body sites with the MBJ20 in a balanced sample of 202 newborns. TSB range was 2.5 – 20 mg/dL (average 9.9 mg/dL). Compared accuracy by site.</p>
+        <div class="metrics">
+          <div class="metric"><div class="val">0.14 mg/dL</div><div class="lbl">Mean difference at sternum</div></div>
+          <div class="metric"><div class="val">-0.34 mg/dL</div><div class="lbl">Mean difference at forehead (P=0.044)</div></div>
+          <div class="metric"><div class="val">3.54 mg/dL</div><div class="lbl">Mean difference at wrist (avoid!)</div></div>
+        </div>
+        <p><strong>Key finding:</strong> Sternum is by far the best site — only 0.14 mg/dL mean deviation from lab TSB. This is remarkably tight agreement. Forehead is slightly less accurate and wrist/shoulder measurements are unreliable. The product's instructions to use the sternum are clinically validated here.</p>
+        <p><strong>Bottom line:</strong> When used correctly at the sternum, the MBJ20's accuracy in this population was excellent — comparable to the Dräger JM-105's ±1.5 mg/dL SEE. This is the most favorable study for the device.</p>
+      </div>
+    </div>
+
+    <div class="study-card">
+      <div class="study-head">
+        <h4>Study 3 — Turkish Prospective Comparison vs. BiliCare (Kucukoglu Keser, 2025)</h4>
+        <div class="meta">International Journal of Clinical Practice (Wiley) · 88 infants ≥34 weeks · Compared MBJ20 sternum vs. BiliCare auricle vs. serum bilirubin</div>
+      </div>
+      <div class="study-body">
+        <p><strong>What they did:</strong> Head-to-head comparison of MBJ20 (sternum) against BiliCare (ear), measuring accuracy and ability to predict phototherapy need. Mean TSB was 14.4 mg/dL — a higher-risk population already showing significant jaundice.</p>
+        <div class="metrics">
+          <div class="metric"><div class="val">r = 0.756</div><div class="lbl">MBJ20 correlation with TSB</div></div>
+          <div class="metric"><div class="val">-0.12 mg/dL</div><div class="lbl">Mean bias vs TSB (near-zero)</div></div>
+          <div class="metric"><div class="val">AUC 0.751</div><div class="lbl">Phototherapy prediction accuracy</div></div>
+        </div>
+        <p><strong>Key finding:</strong> Near-zero mean bias (-0.12 mg/dL) — the MBJ20 read almost exactly the same as the lab at this population level. However, the correlation coefficient (r = 0.756) was lower than the Iranian and Nigerian studies — suggesting individual readings can scatter more than averages suggest. The optimal cutoff for referring to phototherapy with this device is 15.6 mg/dL, not the 15 mg/dL you might use for a cleared device.</p>
+        <p><strong>Bottom line:</strong> Decent but less impressive correlation in this higher-bilirubin population. Phototherapy prediction is reasonable (AUC 0.751) but not as strong as a cleared device. Misclassification of individual patients remains a real risk.</p>
+      </div>
+    </div>
+
+    <div class="study-card">
+      <div class="study-head">
+        <h4>Study 4 — Thai Multicenter Study (PMC, 2025)</h4>
+        <div class="meta">PubMed Central · 212 newborns, GA ≥35 weeks, 876 paired measurements at forehead and sternum</div>
+      </div>
+      <div class="study-body">
+        <p><strong>What they did:</strong> Large-scale validation of TcB at both sites against TSB, using Bland-Altman analysis and AUC for multiple bilirubin thresholds (10, 12, and 15 mg/dL).</p>
+        <div class="metrics">
+          <div class="metric"><div class="val">r = 0.90</div><div class="lbl">Sternum correlation with TSB</div></div>
+          <div class="metric"><div class="val">&gt;0.9 AUC</div><div class="lbl">All three phototherapy thresholds</div></div>
+          <div class="metric"><div class="val">≥80%</div><div class="lbl">Sensitivity &amp; specificity at all cutoffs</div></div>
+        </div>
+        <p><strong>Key finding:</strong> Strong performance across all thresholds. AUC above 0.9 means the device is genuinely useful as a screening tool when interpreted at the right cutoffs. Sensitivity and specificity both ≥80% is clinically meaningful — these aren't just correlation statistics, they reflect real screening performance.</p>
+        <p><strong>Bottom line:</strong> The most optimistic data. The MBJ20 in a large, well-controlled study shows it can reliably screen for clinically significant jaundice. However, the study authors still conclude TSB confirmation is required for management decisions.</p>
+      </div>
+    </div>
+
+    <div class="study-card">
+      <div class="study-head">
+        <h4>Active Clinical Trial — Phototherapy Context (ClinicalTrials.gov NCT06105879)</h4>
+        <div class="meta">Registered 2023 · Evaluating MBJ20-2019 in phototherapy monitoring · Results pending</div>
+      </div>
+      <div class="study-body">
+        <p><strong>What they're doing:</strong> A formal clinical trial using the MBJ20 to measure TcB from both exposed (sternum) and covered (forehead, under patch) skin before, during, and after phototherapy. This is directly relevant to whether the device works across the full jaundice management workflow.</p>
+        <p><strong>Status:</strong> Results not yet published. But the fact that researchers are actively using this device in a registered clinical trial adds credibility that it is taken seriously as a research instrument internationally.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ACCURACY -->
+<div class="section" id="accuracy">
+  <div class="section-header">Accuracy Data — Summary Table</div>
+  <p class="section-sub">All published accuracy metrics for the MBJ20 across studies. Includes correlation coefficients, mean bias, and phototherapy prediction performance.</p>
+
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Study / Source</th>
+        <th>N (infants)</th>
+        <th>Site</th>
+        <th>Correlation (r)</th>
+        <th>Mean Bias vs. TSB</th>
+        <th>Rating</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Iranian study (PMC, 2024)<br><small>GA &gt;30wk; TSB range 2.5–20 mg/dL</small></td>
+        <td>202</td>
+        <td>Sternum</td>
+        <td>Not published separately</td>
+        <td><strong>+0.14 mg/dL</strong> (near zero)</td>
+        <td><span class="badge-good">Excellent</span></td>
+      </tr>
+      <tr>
+        <td>Turkish study (Wiley, 2025)<br><small>GA ≥34wk; mean TSB 14.4 mg/dL</small></td>
+        <td>88</td>
+        <td>Sternum</td>
+        <td>r = 0.756</td>
+        <td><strong>-0.12 mg/dL</strong> (near zero)</td>
+        <td><span class="badge-good">Good</span></td>
+      </tr>
+      <tr>
+        <td>Thai study (PMC, 2025)<br><small>GA ≥35wk; 876 measurements</small></td>
+        <td>212</td>
+        <td>Sternum</td>
+        <td>r = 0.90</td>
+        <td>Good agreement per Bland-Altman</td>
+        <td><span class="badge-good">Good</span></td>
+      </tr>
+      <tr>
+        <td>Nigerian study (MDPI, 2016)<br><small>GA 28–44wk; predominantly dark skin</small></td>
+        <td>88</td>
+        <td>Sternum</td>
+        <td>r = 0.917</td>
+        <td><strong>+2.0 mg/dL</strong> (overestimate)</td>
+        <td><span class="badge-warn">Mixed</span></td>
+      </tr>
+      <tr>
+        <td>Nigerian study (MDPI, 2016)</td>
+        <td>88</td>
+        <td>Forehead</td>
+        <td>r = 0.904</td>
+        <td><strong>+3.2 mg/dL</strong> (significant overestimate)</td>
+        <td><span class="badge-bad">Avoid</span></td>
+      </tr>
+      <tr>
+        <td>Iranian study (PMC, 2024)</td>
+        <td>202</td>
+        <td>Forehead</td>
+        <td>Not published</td>
+        <td>-0.34 mg/dL (slight underestimate)</td>
+        <td><span class="badge-warn">Acceptable</span></td>
+      </tr>
+      <tr>
+        <td>Iranian study (PMC, 2024)</td>
+        <td>202</td>
+        <td>Wrist</td>
+        <td>Not published</td>
+        <td><strong>+3.54 mg/dL</strong></td>
+        <td><span class="badge-bad">Do not use</span></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="verdict-banner vb-caution">
+    <h3>⚡ What These Numbers Mean in Practice</h3>
+    <p>Sternum readings are significantly more accurate than forehead readings — a consistent finding across all studies. In the two most recent and methodologically strong studies (Iranian 2024, Turkish 2025), sternum bias was essentially zero (0.14 mg/dL and -0.12 mg/dL respectively). The Nigerian data showing +2.0 mg/dL overestimation likely reflects the predominantly dark-skinned population — see the Skin Tone tab. The practical takeaway: <strong>sternum only, and understand that in a diverse U.S. patient population, accuracy will vary by skin tone.</strong></p>
+  </div>
+
+  <div class="info-box">
+    <strong>For context: What does the Dräger JM-105 show?</strong>
+    The JM-105 is FDA-validated at ±1.5 mg/dL SEE (Standard Error of Estimate) at ≥35 weeks. The MBJ20's best-case sternum data (0.14 mg/dL mean bias in the Iranian study) is actually tighter than that — but mean bias and SEE are different statistics. Mean bias tells you about systematic offset; SEE tells you about individual reading variability. The MBJ20 lacks a published SEE figure, so we cannot make a direct apples-to-apples comparison. Individual readings may scatter more than the MBJ20's low mean bias suggests.
+  </div>
+</div>
+
+<!-- SKIN TONE -->
+<div class="section" id="skin">
+  <div class="section-header">Skin Tone Accuracy — Critical for DFW &amp; Austin</div>
+  <p class="section-sub">Texas has a highly diverse patient population. DFW and Austin practices see significant numbers of Hispanic, Black, South Asian, and mixed-ethnicity newborns. This matters enormously for TcB accuracy.</p>
+
+  <div class="verdict-banner vb-caution">
+    <h3>⚠ The Skin Tone Issue Is Real — But the Bias Direction Is Protective</h3>
+    <p>All transcutaneous bilirubinometers — including the gold-standard Dräger JM-105 — show reduced accuracy in darker-skinned neonates. For the MBJ20 specifically, darker skin tends to cause <em>overestimation</em> of TcB relative to actual TSB. This means the device reads higher than the true bilirubin level in darker patients. Counterintuitively, this is the safer direction of error in jaundice screening: you are more likely to over-refer for lab confirmation than to miss a case that needs phototherapy. But it will increase your unnecessary blood draw rate in darker-skinned patients.</p>
+  </div>
+
+  <div class="finding-row">
+    <div class="finding-icon">🔬</div>
+    <div class="finding-text">
+      <strong>What the Nigerian study showed on dark skin</strong>
+      <span>The Nigerian study was conducted at a West African hospital with a predominantly dark-skinned population. The +2.0 mg/dL overestimation at the sternum (vs. near-zero in Iranian and Turkish lighter-skin populations) strongly suggests this inflation is skin-tone driven.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">📊</div>
+    <div class="finding-text">
+      <strong>Published physics research confirms direction of error</strong>
+      <span>A 2024 skin phantom study in Pediatric Research (evaluating the JM-105 specifically, but applicable to all TcB devices) confirmed that darker skin colors lead to larger underestimations of subcutaneous bilirubin — meaning the device has to correct more aggressively and can overcorrect, resulting in overestimated readings in some scenarios. Both underestimation and overestimation are documented depending on the device's algorithm.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">⚕️</div>
+    <div class="finding-text">
+      <strong>Phototherapy guidance for diverse skin tones</strong>
+      <span>General TcB literature (not MBJ20-specific) shows reduced sensitivity in Fitzpatrick III–VI skin types for predicting clinically significant hyperbilirubinemia — meaning more false negatives are possible in darker-skinned patients if using TcB as the sole screening modality. For Modern Pediatrics, this means serum confirmation should be a lower threshold in darker-skinned patients.</span>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div class="col-card cc-yellow">
+      <h4>⚠ Higher-Risk Scenarios for MBJ20 Accuracy</h4>
+      <ul>
+        <li>Black/African American newborns (Fitzpatrick V–VI)</li>
+        <li>South Asian newborns (Fitzpatrick IV–V)</li>
+        <li>Infants receiving or who have received phototherapy</li>
+        <li>Very preterm infants (&lt;35 weeks)</li>
+        <li>Forehead measurement site</li>
+        <li>High bilirubin levels (&gt;15 mg/dL) — scatter increases</li>
+      </ul>
+    </div>
+    <div class="col-card cc-green">
+      <h4>✓ Lower-Risk Scenarios (More Reliable)</h4>
+      <ul>
+        <li>Caucasian/Hispanic (lighter-toned) newborns</li>
+        <li>Term newborns ≥37 weeks</li>
+        <li>Sternum measurement site</li>
+        <li>Bilirubin range 5–15 mg/dL</li>
+        <li>Pre-phototherapy screening only</li>
+        <li>Used as initial screen with mandatory lab follow-up</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>DFW/Austin-Specific Note</strong>
+    Texas has one of the largest Hispanic populations in the U.S. — in DFW, roughly 28–30% of the population identifies as Hispanic/Latino, with significant Black (25%+ in many neighborhoods) and South Asian communities as well. A meaningful proportion of Modern Pediatrics' newborn patients will be in the skin-tone ranges where MBJ20 accuracy is most variable. This is a legitimate clinical consideration that should influence your policy if you purchase this device: you will likely need a lower threshold for serum confirmation in non-white patients.
+  </div>
+</div>
+
+<!-- PHOTOTHERAPY -->
+<div class="section" id="phototherapy">
+  <div class="section-header">Post-Phototherapy Accuracy</div>
+  <p class="section-sub">A critical gap: once phototherapy is started, can you use the MBJ20 to monitor response? The answer is complicated.</p>
+
+  <div class="verdict-banner vb-no">
+    <h3>✗ Do NOT Use the MBJ20 to Monitor Response to Phototherapy</h3>
+    <p>Phototherapy degrades the skin's bilirubin content without proportionally reducing serum bilirubin — causing TcB readings to fall faster than actual blood bilirubin. This is a known limitation of all transcutaneous bilirubinometers. Multiple studies on all TcB device brands (including JM-103/105) confirm that TcB accuracy drops significantly during and after phototherapy. The MBJ20 is not validated post-phototherapy. Serum bilirubin must be used for monitoring once phototherapy is initiated.</p>
+  </div>
+
+  <div class="finding-row">
+    <div class="finding-icon">💡</div>
+    <div class="finding-text">
+      <strong>Why phototherapy breaks TcB readings</strong>
+      <span>Blue light phototherapy converts bilirubin in the skin to more water-soluble isomers that are excreted. The skin clears faster than the bloodstream. So the skin appears to have less bilirubin than the blood actually contains — TcB underestimates TSB during and shortly after phototherapy, sometimes by 3–5 mg/dL.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">📋</div>
+    <div class="finding-text">
+      <strong>The "covered skin" workaround</strong>
+      <span>The active clinical trial (NCT06105879) is specifically studying whether measuring from skin covered by a patch (protected from phototherapy light) gives more accurate TcB readings during treatment. This is an ongoing research question — not yet validated for the MBJ20. Do not apply this workaround in practice without validated protocols.</span>
+    </div>
+  </div>
+  <div class="finding-row">
+    <div class="finding-icon">⏱️</div>
+    <div class="finding-text">
+      <strong>Recovery time post-phototherapy</strong>
+      <span>TcB readings are unreliable for approximately 8–12 hours after phototherapy is discontinued, as bilirubin redistributes from blood back to skin. For Modern Pediatrics' follow-up home visits, this window matters — a next-day home visit could fall within this unreliable window if the infant had phototherapy within the past day.</span>
+    </div>
+  </div>
+
+  <div class="info-box">
+    <strong>Practical implication for Modern Pediatrics</strong>
+    If you use the MBJ20 as a screening tool for initial post-discharge jaundice checks in the home setting, this limitation is manageable — you are unlikely to encounter an infant actively on phototherapy during a home visit. However, if an infant was recently discharged from phototherapy, the device's readings for the next 8–12 hours should be treated with extra skepticism, and lab confirmation should be ordered regardless of the reading.
+  </div>
+</div>
+
+<!-- MOBILE PRACTICE -->
+<div class="section" id="mobile">
+  <div class="section-header">Fit for Modern Pediatrics — Mobile Practice Analysis</div>
+  <p class="section-sub">The unique logistics of a mobile pediatric practice in DFW/Austin change the calculus significantly compared to a brick-and-mortar office.</p>
+
+  <div class="two-col">
+    <div class="col-card cc-green">
+      <h4>✓ Where the MBJ20 Would Add Value for Modern Pediatrics</h4>
+      <ul>
+        <li><strong>Rapid triage at home visits</strong> — a quick sternal read tells you whether a newborn's jaundice looks concerning, allowing you to triage which patients need an urgent lab order vs. which ones can return for a scheduled check</li>
+        <li><strong>Visual exam supplement</strong> — providers often do visual jaundice assessment in home visits; the MBJ20 gives an objective number to go with that visual impression</li>
+        <li><strong>No consumables</strong> — no tips to restock or manage in a field kit; AA batteries are universally replaceable</li>
+        <li><strong>Portability</strong> — lightweight and compact; fits in a home visit bag alongside your other equipment</li>
+        <li><strong>Cost</strong> — at $300–$600, an affordable adjunct for a growing practice not yet at Dräger scale</li>
+        <li><strong>No calibration scheduling</strong> — self-check calibration eliminates the need for factory service appointments, which matters for a lean operations team</li>
+      </ul>
+    </div>
+    <div class="col-card cc-red">
+      <h4>✗ Where the Mobile Setting Makes the MBJ20 Riskier</h4>
+      <ul>
+        <li><strong>No immediate lab follow-up</strong> — in a hospital or office, a high TcB triggers an immediate heel-stick. In a home visit, you're ordering a lab that may not be done for hours. If the MBJ20 underreads a truly high bilirubin, you've lost critical time</li>
+        <li><strong>No EMR integration</strong> — every reading is manually documented; transcription error risk is real when you're doing multiple visits per day from a car</li>
+        <li><strong>Diverse patient population</strong> — DFW's racial/ethnic diversity means a higher proportion of patients will be in the skin-tone groups where MBJ20 accuracy is most variable</li>
+        <li><strong>No protocol compliance tools</strong> — no patient flagging, no automatic alerts; your providers must manually apply your jaundice management protocol</li>
+        <li><strong>No FDA clearance</strong> — if a patient outcome is questioned, the documentation trail showing you used a non-cleared device in a home setting is a liability exposure point</li>
+        <li><strong>Phototherapy follow-up gap</strong> — if you're doing a next-day check after phototherapy was initiated, the device is unreliable in that window</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="verdict-banner vb-caution">
+    <h3>⚡ The Mobile Context Actually Raises the Stakes</h3>
+    <p>In a traditional office or hospital setting, a high or suspicious TcB reading triggers an immediate blood draw. In a home visit, the provider goes from the home to the next patient, and the family goes to a lab later. That time gap between a TcB reading and a confirmatory TSB is where a false-low reading becomes dangerous. Modern Pediatrics' mobile model means you need to trust the device more, not less — because you cannot immediately backstop it with a heel-stick. This argues for a conservative, low-threshold policy for ordering confirmatory labs when using the MBJ20.</p>
+  </div>
+
+  <div class="info-box">
+    <strong>Suggested Protocol if Purchased</strong>
+    Based on the clinical data and your practice's context, here is a framework that would make the MBJ20 usable while managing its limitations: (1) Sternum only — no forehead readings. (2) Any reading above 12 mg/dL in the first 24–48 hours, or above 14 mg/dL at any age, triggers a mandatory same-day lab order regardless of gestational age. (3) For darker-skinned infants, lower the lab-order threshold to 10 mg/dL. (4) Never use post-phototherapy. (5) Document every reading manually in the patient's chart, including the device and calibration check date.
+  </div>
+</div>
+
+<!-- VERDICT -->
+<div class="section" id="verdict">
+  <div class="section-header">Final Verdict: Is This Worth It for Modern Pediatrics?</div>
+  <p class="section-sub">The short answer is: conditionally yes — with strict protocols and clear eyes about what this device is and isn't.</p>
+
+  <div class="verdict-grid">
+    <div class="vg-card">
+      <div class="score score-a">B+</div>
+      <div class="label">Clinical Evidence Grade</div>
+      <p>More published research than most Amazon medical devices. Sternum accuracy is genuinely good in multiple studies. Correlation coefficients and bias data are real and peer-reviewed.</p>
+    </div>
+    <div class="vg-card">
+      <div class="score score-b">C+</div>
+      <div class="label">Regulatory Grade</div>
+      <p>No FDA clearance is a real gap. The device functions and has data supporting it, but lacks the cleared status that protects a practice from liability in the U.S. context.</p>
+    </div>
+    <div class="vg-card">
+      <div class="score score-b">B</div>
+      <div class="label">Mobile Practice Fit</div>
+      <p>Good portability, no consumables, easy operation. But the absence of EMR integration and the mobile-specific risk of delayed lab follow-up raise the stakes of any individual reading error.</p>
+    </div>
+  </div>
+
+  <div class="recommendation-box">
+    <h3>Our Clinical Evidence-Based Recommendation</h3>
+    <div class="rec-item">
+      <div class="rec-num">1</div>
+      <span>The MBJ20 (B0G1YBC8BN) is a <strong>legitimate clinical screening adjunct</strong>, not a toy. The research shows it works well at the sternum for initial jaundice screening in term and near-term infants.</span>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">2</div>
+      <span>It is <strong>not a replacement for the Dräger JM-105</strong> — the JM-105 has FDA clearance, a validated SEE, EMR integration, and factory calibration that the MBJ20 lacks.</span>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">3</div>
+      <span>At <strong>$300–$600</strong>, it is a reasonable purchase as a field screening tool for home visits — provided Modern Pediatrics creates a written protocol requiring serum bilirubin confirmation above defined thresholds.</span>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">4</div>
+      <span>Given DFW/Austin's diverse population, <strong>lower your confirmation threshold for non-white patients</strong>. The overestimation in darker skin at least prevents missed cases, but it means more lab orders.</span>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">5</div>
+      <span><strong>Never use post-phototherapy.</strong> That is a bright-line policy — every time, serum bilirubin for phototherapy monitoring, full stop.</span>
+    </div>
+    <div class="rec-item">
+      <div class="rec-num">6</div>
+      <span>If the practice grows to the point where it performs 10+ newborn bilirubin checks per week, <strong>the business case for a Dräger JM-105 improves rapidly</strong> — and EMR integration, patient flagging, and FDA-cleared documentation become worth the price delta.</span>
+    </div>
+  </div>
+</div>
+
+<script>
+function show(id, btn) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>
